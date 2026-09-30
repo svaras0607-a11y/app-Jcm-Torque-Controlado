@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JCM Ingeniería Ltda. - Control de Torque</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        jcmRed: '#E50914',
+                        jcmDark: '#0A0A0A',
+                        jcmCard: '#141414',
+                        jcmBorder: '#262626'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #262626;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #e50914;
+        }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-[#050505] text-gray-100 font-sans min-h-screen selection:bg-jcmRed selection:text-white custom-scrollbar">
+
+    <!-- CONTENEDOR DE NOTIFICACIONES TOAST -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <!-- ==================== PANTALLA DE LOGIN ==================== -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#050505] px-4">
+        <!-- Efectos de luz corporativa de fondo -->
+        <div class="absolute -top-32 -left-32 w-96 h-96 bg-jcmRed/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-red-900/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="w-full max-w-md glass-panel p-8 rounded-2xl shadow-2xl relative border border-jcmBorder">
+            <!-- Header del Login -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-jcmRed/10 border border-jcmRed/30 mb-4 shadow-lg shadow-jcmRed/20">
+                    <i class="fa-solid fa-gauge-high text-3xl text-jcmRed"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight text-white">
+                    <span class="text-jcmRed">JCM</span> Ingeniería Ltda.
+                </h1>
+                <p class="text-xs text-gray-400 mt-1 uppercase tracking-wider font-medium">Departamento de Torque Controlado</p>
+            </div>
+
+            <!-- Formulario -->
+            <form id="login-form" class="space-y-5" onsubmit="handleLogin(event)">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase mb-2">Usuario del Sistema</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <input type="text" id="login-user" required value="admin" 
+                            class="w-full pl-10 pr-4 py-3 bg-[#0a0a0a] border border-jcmBorder rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-jcmRed focus:ring-1 focus:ring-jcmRed transition text-sm"
+                            placeholder="Ingrese su usuario">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase mb-2">Contraseña</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input type="password" id="login-pass" required value="jcm2026" 
+                            class="w-full pl-10 pr-12 py-3 bg-[#0a0a0a] border border-jcmBorder rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-jcmRed focus:ring-1 focus:ring-jcmRed transition text-sm"
+                            placeholder="••••••••">
+                        <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-500 hover:text-white transition">
+                            <i id="eye-icon" class="fa-solid fa-eye text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs">
+                    <label class="flex items-center text-gray-400 cursor-pointer">
+                        <input type="checkbox" checked class="rounded bg-[#0a0a0a] border-jcmBorder text-jcmRed focus:ring-0 mr-2">
+                        Recordar credenciales
+                    </label>
+                    <a href="#" onclick="showForgotPassword(event)" class="text-jcmRed hover:underline font-medium">¿Olvidó su clave?</a>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-jcmRed hover:bg-red-700 text-white font-semibold rounded-xl shadow-lg shadow-jcmRed/30 transition-all duration-200 flex items-center justify-center gap-2 text-sm uppercase tracking-wide">
+                    <span>Iniciar Sesión</span>
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                </button>
+            </form>
+
+            <div class="mt-8 pt-6 border-t border-jcmBorder text-center text-xs text-gray-500">
+                Sistema Operativo Autorizado • JCM Ingeniería Ltda.
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== APLICACIÓN PRINCIPAL (DASHBOARD) ==================== -->
+    <div id="main-app" class="hidden flex h-screen overflow-hidden">
+        
+        <!-- BARRA LATERAL (SIDEBAR) -->
+        <aside class="w-64 bg-[#0a0a0a] border-r border-jcmBorder flex flex-col justify-between z-20 select-none">
+            <div>
+                <!-- Logo / Título del Sistema -->
+                <div class="p-6 border-b border-jcmBorder flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-jcmRed flex items-center justify-center shadow-md shadow-jcmRed/20 text-white font-bold text-lg">
+                        J
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold tracking-tight">
+                            <span class="text-jcmRed">JCM</span> <span class="text-white">Ingeniería Ltda.</span>
+                        </h2>
+                        <p class="text-[11px] text-gray-400 font-medium">Departamento de Torque Controlado</p>
+                    </div>
+                </div>
+
+                <!-- Menú de Navegación -->
+                <nav class="p-4 space-y-1.5">
+                    <a href="#" onclick="switchTab('inicio')" id="nav-inicio" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-jcmRed text-white shadow-md shadow-jcmRed/20 transition">
+                        <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                        <span>Inicio / Mineras</span>
+                    </a>
+                    
+                    <a href="#" onclick="switchTab('plantillas')" id="nav-plantillas" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition">
+                        <i class="fa-solid fa-file-lines w-5 text-center"></i>
+                        <span>Plantillas de Informes</span>
+                    </a>
+
+                    <!-- Menú Desplegable: Protocolos y Tarjetas -->
+                    <div>
+                        <button onclick="toggleSubmenu('submenu-protocolos')" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-book-bookmark w-5 text-center"></i>
+                                <span>Protocolos y Tarjetas</span>
+                            </div>
+                            <i id="arrow-protocolos" class="fa-solid fa-chevron-down text-xs transition-transform"></i>
+                        </button>
+                        <div id="submenu-protocolos" class="hidden pl-9 pr-2 py-1 space-y-1 text-xs">
+                            <a href="#" onclick="filterByHolding('BHP')" class="block py-2 px-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition flex items-center justify-between">
+                                <span>BHP</span>
+                                <span class="text-[10px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded font-mono">3 Faenas</span>
+                            </a>
+                            <a href="#" onclick="filterByHolding('Lundin')" class="block py-2 px-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition flex items-center justify-between">
+                                <span>Lundin Mining</span>
+                                <span class="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded font-mono">3 Faenas</span>
+                            </a>
+                            <a href="#" onclick="filterByHolding('Teck')" class="block py-2 px-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition flex items-center justify-between">
+                                <span>Teck Resources</span>
+                                <span class="text-[10px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded font-mono">1 Faena</span>
+                            </a>
+                            <a href="#" onclick="filterByHolding('Anglo')" class="block py-2 px-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition flex items-center justify-between">
+                                <span>Anglo American</span>
+                                <span class="text-[10px] bg-indigo-500/10 text-indigo-500 px-1.5 py-0.5 rounded font-mono">2 Faenas</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Menú Desplegable: Opciones -->
+                    <div>
+                        <button onclick="toggleSubmenu('submenu-opciones')" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-gear w-5 text-center"></i>
+                                <span>Opciones</span>
+                            </div>
+                            <i id="arrow-opciones" class="fa-solid fa-chevron-down text-xs transition-transform"></i>
+                        </button>
+                        <div id="submenu-opciones" class="hidden pl-9 pr-2 py-1 space-y-1 text-xs">
+                            <a href="#" onclick="openConfigModal('general')" class="block py-2 px-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition">
+                                <i class="fa-solid fa-sliders mr-2"></i> Configuración General
+                            </a>
+                            <a href="#" onclick="openConfigModal('theme')" class="block py-2 px-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition">
+                                <i class="fa-solid fa-palette mr-2"></i> Personalizar Colores
+                            </a>
+                            <a href="#" onclick="openConfigModal('security')" class="block py-2 px-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition">
+                                <i class="fa-solid fa-shield-halved mr-2"></i> Seguridad y Permisos
+                            </a>
+                            <a href="#" onclick="openConfigModal('sync')" class="block py-2 px-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition">
+                                <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Sincronización Cloud
+                            </a>
+                        </div>
+                    </div>
+
+                    <a href="#" onclick="switchTab('usuarios')" id="nav-usuarios" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition">
+                        <i class="fa-solid fa-users-gear w-5 text-center"></i>
+                        <span>Gestión de Usuarios</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Footer del Sidebar con Auditoría -->
+            <div class="p-4 border-t border-jcmBorder bg-[#080808]">
+                <div class="flex items-center justify-between text-xs text-gray-400 mb-2">
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Drive Sync</span>
+                    <span class="text-[10px] font-mono bg-white/5 px-1.5 py-0.5 rounded">Activo 24/7</span>
+                </div>
+                <button onclick="triggerCloudBackup()" class="w-full py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs font-medium transition flex items-center justify-center gap-2 border border-white/5">
+                    <i class="fa-solid fa-rotate text-jcmRed"></i> Sincronizar Auditoría
+                </button>
+            </div>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#050505]">
+            
+            <!-- HEADER SUPERIOR -->
+            <header class="h-20 bg-[#0a0a0a] border-b border-jcmBorder px-8 flex items-center justify-between z-10">
+                <!-- Breadcrumbs & Título -->
+                <div class="flex items-center gap-3">
+                    <span class="text-gray-500 text-sm"><i class="fa-solid fa-house"></i></span>
+                    <span class="text-gray-600">/</span>
+                    <h2 id="current-view-title" class="text-base font-semibold text-white tracking-wide">Dashboard / Mineras</h2>
+                </div>
+
+                <!-- Panel de Usuario y Acciones -->
+                <div class="flex items-center gap-4">
+                    <!-- Buscador rápido -->
+                    <div class="relative hidden md:block">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 text-xs">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" placeholder="Buscar protocolo o faena..." oninput="filterDashboard(this.value)"
+                            class="pl-9 pr-4 py-2 bg-[#141414] border border-jcmBorder rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-jcmRed w-64 transition">
+                    </div>
+
+                    <!-- Notificaciones -->
+                    <button onclick="showToast('No hay nuevas alertas pendientes en el sistema.', 'info')" class="w-10 h-10 rounded-xl bg-[#141414] border border-jcmBorder flex items-center justify-center text-gray-400 hover:text-white transition relative">
+                        <i class="fa-solid fa-bell text-sm"></i>
+                        <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-jcmRed"></span>
+                    </button>
+
+                    <!-- Perfil de Usuario (Sergio Varas) -->
+                    <div class="flex items-center gap-3 pl-4 border-l border-jcmBorder">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-jcmRed to-red-600 flex items-center justify-center font-bold text-white shadow-md shadow-jcmRed/20 text-sm">
+                            SV
+                        </div>
+                        <div class="hidden sm:block text-left">
+                            <div class="text-sm font-semibold text-white leading-tight">Sergio Varas</div>
+                            <div class="text-[11px] text-gray-400 font-medium tracking-wide">Mec. Líder Torque</div>
+                        </div>
+                        <button onclick="handleLogout()" title="Cerrar Sesión" class="ml-3 w-10 h-10 rounded-xl bg-[#141414] border border-jcmBorder flex items-center justify-center text-gray-400 hover:text-jcmRed hover:border-jcmRed/50 transition">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- ÁREA DE VISTAS DINÁMICAS -->
+            <div id="view-container" class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <!-- VISTA INICIO / MINERAS (Por defecto) -->
+                <div id="tab-inicio" class="space-y-8 animate-fadeIn">
+                    
+                    <!-- Tarjetas de Métricas Principales -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group hover:border-jcmRed/50 transition duration-300">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-jcmRed/5 rounded-full blur-2xl group-hover:bg-jcmRed/15 transition"></div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Faenas Activas</span>
+                                <div class="w-10 h-10 rounded-xl bg-jcmRed/10 text-jcmRed flex items-center justify-center border border-jcmRed/20">
+                                    <i class="fa-solid fa-industry text-lg"></i>
+                                </div>
+                            </div>
+                            <div class="text-3xl font-extrabold text-white mb-1">9</div>
+                            <p class="text-xs text-emerald-400 flex items-center gap-1 font-medium">
+                                <i class="fa-solid fa-arrow-trend-up"></i> 100% Operativas en Red
+                            </p>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group hover:border-jcmRed/50 transition duration-300">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/15 transition"></div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Protocolos Registrados</span>
+                                <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                                    <i class="fa-solid fa-file-shield text-lg"></i>
+                                </div>
+                            </div>
+                            <div class="text-3xl font-extrabold text-white mb-1">412</div>
+                            <p class="text-xs text-blue-400 flex items-center gap-1 font-medium">
+                                <i class="fa-solid fa-database"></i> Sincronizado con Drive
+                            </p>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group hover:border-jcmRed/50 transition duration-300">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/15 transition"></div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Holdings Activos</span>
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                                    <i class="fa-solid fa-building-shield text-lg"></i>
+                                </div>
+                            </div>
+                            <div class="text-3xl font-extrabold text-white mb-1">4</div>
+                            <p class="text-xs text-gray-400 font-medium">BHP, Lundin, Teck, Anglo</p>
+                        </div>
+                    </div>
+
+                    <!-- Sección Holdings y Faenas Mineras -->
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-xl font-bold text-white">Holdings Mineros y Faenas Asociadas</h3>
+                                <p class="text-xs text-gray-400 mt-0.5">Seleccione una faena para acceder a los protocolos de torque, lubricación con grasa Fuchs y registros en tiempo real.</p>
+                            </div>
+                            <button onclick="openNewProtocolModal()" class="px-4 py-2.5 bg-jcmRed hover:bg-red-700 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition shadow-lg shadow-jcmRed/20 flex items-center gap-2">
+                                <i class="fa-solid fa-plus"></i> Nuevo Registro
+                            </button>
+                        </div>
+
+                        <!-- Grilla de Faenas -->
+                        <div id="mineras-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            
+                            <!-- BHP 1: Planta Concentradora Laguna Seca -->
+                            <div onclick="selectFaena('Planta Concentradora Laguna Seca', 'BHP')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:border-jcmRed transition-all duration-300 group relative">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20">BHP</span>
+                                    <i class="fa-solid fa-chevron-right text-xs text-gray-600 group-hover:text-jcmRed transition"></i>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1 group-hover:text-jcmRed transition">Planta Concentradora Laguna Seca</h4>
+                                <p class="text-xs text-gray-400 mb-4">Faena Escondida • Operación de Molinos SAG / Bolas</p>
+                                <div class="pt-4 border-t border-jcmBorder flex items-center justify-between text-xs text-gray-500">
+                                    <span>Lubricación: Fuchs Lagermeister</span>
+                                    <span class="text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i> Activo</span>
+                                </div>
+                            </div>
+
+                            <!-- BHP 2: Planta Concentradora Los Colorados -->
+                            <div onclick="selectFaena('Planta Concentradora Los Colorados', 'BHP')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:border-jcmRed transition-all duration-300 group relative">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20">BHP</span>
+                                    <i class="fa-solid fa-chevron-right text-xs text-gray-600 group-hover:text-jcmRed transition"></i>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1 group-hover:text-jcmRed transition">Planta Concentradora Los Colorados</h4>
+                                <p class="text-xs text-gray-400 mb-4">Faena Escondida • Apriete de Pernos Liners</p>
+                                <div class="pt-4 border-t border-jcmBorder flex items-center justify-between text-xs text-gray-500">
+                                    <span>Lubricación: Fuchs Lagermeister</span>
+                                    <span class="text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i> Activo</span>
+                                </div>
+                            </div>
+
+                            <!-- BHP 3: Spence -->
+                            <div onclick="selectFaena('Spence', 'BHP')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:border-jcmRed transition-all duration-300 group relative">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20">BHP</span>
+                                    <i class="fa-solid fa-chevron-right text-xs text-gray-600 group-hover:text-jcmRed transition"></i>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1 group-hover:text-jcmRed transition">Spence</h4>
+                                <p class="text-xs text-gray-400 mb-4">Minera Escondida / Spence • Mantención Mayor</p>
+                                <div class="pt-4 border-t border-jcmBorder flex items-center justify-between text-xs text-gray-500">
+                                    <span>Lubricación: Fuchs Lagermeister</span>
+                                    <span class="text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i> Activo</span>
+                                </div>
+                            </div>
+
+                            <!-- Lundin 1: Caserones -->
+                            <div onclick="selectFaena('Caserones', 'Lundin')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:border-jcmRed transition-all duration-300 group relative">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">Lundin Mining</span>
+                                    <i class="fa-solid fa-chevron-right text-xs text-gray-600 group-hover:text-jcmRed transition"></i>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1 group-hover:text-jcmRed transition">Caserones</h4>
+                                <p class="text-xs text-gray-400 mb-4">Faena Caserones • Control de Torque Crítico</p>
+                                <div class="pt-4 border-t border-jcmBorder flex items-center justify-between text-xs text-gray-500">
+                                    <span>Torque Controlado</span>
+                                    <span class="text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i> Activo</span>
+                                </div>
+                            </div>
+
+                            <!-- Lundin 2: Candelaria -->
+                            <div onclick="selectFaena('Candelaria', 'Lundin')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:border-jcmRed transition-all duration-300 group relative">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">Lundin Mining</span>
+                                    <i class="fa-solid fa-chevron-right text-xs text-gray-600 group-hover:text-jcmRed transition"></i>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1 group-hover:text-jcmRed transition">Candelaria</h4>
+                                <p class="text-xs text-gray-400 mb-4">Minera Candelaria • Línea de Chancado</p>
+                                <div class="pt-4 border-t border-jcmBorder flex items-center justify-between text-xs text-gray-500">
+                                    <span>Torque Controlado</span>
+                                    <span class="text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i> Activo</span>
+                                </div>
+                            </div>
+
+                            <!-- Lundin 3: Ojos del Salado -->
+                            <div onclick="selectFaena('Ojos del Salado', 'Lundin')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:border-jcmRed transition-all duration-300 group relative">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">Lundin Mining</span>
+                                    <i class="fa-solid fa-chevron-right text-xs text-gray-600 group-hover:text-jcmRed transition"></i>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1 group-hover:text-jcmRed transition">Ojos del Salado</h4>
+                                <p class="text-xs text-gray-400 mb-4">Faena Subterránea • Mantención Mecánica</p>
+                                <div class="pt-4 border-t border-jcmBorder flex items-center justify-between text-xs text-gray-500">
+                                    <span>Torque Controlado</span>
+                                    <span class="text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i> Activo</span>
+                                </div>
+                            </div>
+
+                            <!-- Teck: Quebrada Blanca -->
+                            <div onclick="selectFaena('Quebrada Blanca', 'Teck')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:border-jcmRed transition-all duration-300 group relative">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">Teck Resources</span>
+                                    <i class="fa-solid fa-chevron-right text-xs text-gray-600 group-hover:text-jcmRed transition"></i>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1 group-hover:text-jcmRed transition">Quebrada Blanca</h4>
+                                <p class="text-xs text-gray-400 mb-4">QB2 • Montaje y Torque de Estructuras</p>
+                                <div class="pt-4 border-t border-jcmBorder flex items-center justify-between text-xs text-gray-500">
+                                    <span>Protocolo Estándar Teck</span>
+                                    <span class="text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i> Activo</span>
+                                </div>
+                            </div>
+
+                            <!-- Anglo 1: Los Bronces -->
+                            <div onclick="selectFaena('Los Bronces', 'Anglo')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:border-jcmRed transition-all duration-300 group relative">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Anglo American</span>
+                                    <i class="fa-solid fa-chevron-right text-xs text-gray-600 group-hover:text-jcmRed transition"></i>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1 group-hover:text-jcmRed transition">Los Bronces</h4>
+                                <p class="text-xs text-gray-400 mb-4">Faena Cordillera • Mantención de Molinos</p>
+                                <div class="pt-4 border-t border-jcmBorder flex items-center justify-between text-xs text-gray-500">
+                                    <span>Protocolo Anglo</span>
+                                    <span class="text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i> Activo</span>
+                                </div>
+                            </div>
+
+                            <!-- Anglo 2: Confluencia -->
+                            <div onclick="selectFaena('Confluencia', 'Anglo')" class="glass-panel p-6 rounded-2xl cursor-pointer hover:border-jcmRed transition-all duration-300 group relative">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Anglo American</span>
+                                    <i class="fa-solid fa-chevron-right text-xs text-gray-600 group-hover:text-jcmRed transition"></i>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1 group-hover:text-jcmRed transition">Confluencia</h4>
+                                <p class="text-xs text-gray-400 mb-4">Área Confluencia • Apriete y Lubricación</p>
+                                <div class="pt-4 border-t border-jcmBorder flex items-center justify-between text-xs text-gray-500">
+                                    <span>Protocolo Anglo</span>
+                                    <span class="text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i> Activo</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VISTA PLANTILLAS DE INFORMES -->
+                <div id="tab-plantillas" class="hidden space-y-6 animate-fadeIn">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold text-white">Plantillas de Informes Técnicos</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Formatos oficiales de JCM Ingeniería para auditoría y control de torque en terreno.</p>
+                        </div>
+                        <button onclick="showToast('Generando nueva plantilla en Drive...', 'info')" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-semibold border border-jcmBorder transition">
+                            <i class="fa-solid fa-cloud-arrow-down mr-2"></i> Descargar Pack Completo
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="glass-panel p-6 rounded-2xl space-y-4">
+                            <div class="w-12 h-12 rounded-xl bg-jcmRed/10 text-jcmRed flex items-center justify-center border border-jcmRed/20 text-xl">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Informe Técnico de Torque SAG</h4>
+                                <p class="text-xs text-gray-400 mt-1">Formato oficial para registro de apriete de pernos con grasa Fuchs Lagermeister BF 2.</p>
+                            </div>
+                            <button onclick="downloadTemplate('Torque_SAG')" class="w-full py-2 bg-jcmRed/10 hover:bg-jcmRed text-jcmRed hover:text-white rounded-xl text-xs font-semibold transition border border-jcmRed/30">
+                                Descargar Plantilla (.PDF)
+                            </button>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl space-y-4">
+                            <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20 text-xl">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Planilla de Control Diario</h4>
+                                <p class="text-xs text-gray-400 mt-1">Hoja de cálculo para auditoría de torques por turno y operador en faena.</p>
+                            </div>
+                            <button onclick="downloadTemplate('Control_Diario')" class="w-full py-2 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-xl text-xs font-semibold transition border border-blue-500/30">
+                                Descargar Planilla (.XLSX)
+                            </button>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl space-y-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 text-xl">
+                                <i class="fa-solid fa-file-shield"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Protocolo de Liberación</h4>
+                                <p class="text-xs text-gray-400 mt-1">Certificado de liberación de equipos para entrega a mandante minero.</p>
+                            </div>
+                            <button onclick="downloadTemplate('Liberacion')" class="w-full py-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white rounded-xl text-xs font-semibold transition border border-emerald-500/30">
+                                Descargar Formato (.PDF)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VISTA PROTOCOLOS Y TARJETAS (Filtrada por Holding) -->
+                <div id="tab-protocolos" class="hidden space-y-6 animate-fadeIn">
+                    <div class="flex items-center justify-between bg-[#141414] p-6 rounded-2xl border border-jcmBorder">
+                        <div>
+                            <span id="proto-holding-badge" class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-jcmRed/10 text-jcmRed border border-jcmRed/30">Holding Seleccionado</span>
+                            <h3 id="proto-title" class="text-xl font-bold text-white mt-2">Protocolos y Tarjetas Técnicas</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Repertorio especializado de apriete, lubricación y secuencias de torque.</p>
+                        </div>
+                        <button onclick="switchTab('inicio')" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-semibold transition">
+                            <i class="fa-solid fa-arrow-left mr-2"></i> Volver a Mineras
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="protocolos-list-container">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- VISTA GESTIÓN DE USUARIOS -->
+                <div id="tab-usuarios" class="hidden space-y-6 animate-fadeIn">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold text-white">Gestión de Usuarios del Sistema</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Control de accesos y permisos para mecánicos y supervisores de JCM.</p>
+                        </div>
+                        <button onclick="showToast('Función de nuevo usuario lista en Google Drive', 'info')" class="px-4 py-2 bg-jcmRed hover:bg-red-700 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-jcmRed/20">
+                            <i class="fa-solid fa-user-plus mr-2"></i> Añadir Usuario
+                        </button>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl overflow-hidden border border-jcmBorder">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-jcmBorder bg-[#0a0a0a] text-gray-400 uppercase font-semibold">
+                                    <th class="p-4">Colaborador</th>
+                                    <th class="p-4">Cargo / Rol</th>
+                                    <th class="p-4">Faena Asignada</th>
+                                    <th class="p-4">Estado Drive</th>
+                                    <th class="p-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-jcmBorder text-gray-300">
+                                <tr class="hover:bg-white/5 transition">
+                                    <td class="p-4 flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-jcmRed flex items-center justify-center font-bold text-white text-xs">SV</div>
+                                        <div>
+                                            <div class="font-semibold text-white">Sergio Varas</div>
+                                            <div class="text-[10px] text-gray-500">sergio.varasa@jcmingenierialtda.cl</div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4"><span class="bg-jcmRed/10 text-jcmRed px-2 py-1 rounded font-medium">Administrador / Líder</span></td>
+                                    <td class="p-4">Todas las Faenas</td>
+                                    <td class="p-4"><span class="text-emerald-400"><i class="fa-solid fa-circle-check"></i> Sincronizado</span></td>
+                                    <td class="p-4 text-right">
+                                        <button onclick="showToast('Perfil de Sergio Varas verificado', 'info')" class="text-gray-400 hover:text-white px-2 py-1 bg-white/5 rounded"><i class="fa-solid fa-gear"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-white/5 transition">
+                                    <td class="p-4 flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs">JM</div>
+                                        <div>
+                                            <div class="font-semibold text-white">Juan Morales</div>
+                                            <div class="text-[10px] text-gray-500">j.morales@jcmingenierialtda.cl</div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4"><span class="bg-blue-500/10 text-blue-400 px-2 py-1 rounded font-medium">Mecántico Torque</span></td>
+                                    <td class="p-4">Planta Laguna Seca (BHP)</td>
+                                    <td class="p-4"><span class="text-emerald-400"><i class="fa-solid fa-circle-check"></i> Sincronizado</span></td>
+                                    <td class="p-4 text-right">
+                                        <button onclick="showToast('Usuario verificado', 'info')" class="text-gray-400 hover:text-white px-2 py-1 bg-white/5 rounded"><i class="fa-solid fa-gear"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ==================== MODAL DE CONFIGURACIÓN / OPCIONES ==================== -->
+    <div id="config-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="w-full max-w-lg glass-panel p-6 rounded-2xl border border-jcmBorder shadow-2xl relative">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-jcmBorder">
+                <h3 id="config-modal-title" class="text-lg font-bold text-white">Configuración del Sistema</h3>
+                <button onclick="closeConfigModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="config-modal-body" class="space-y-4 text-xs text-gray-300">
+                <!-- Contenido dinámico -->
+            </div>
+            <div class="mt-6 pt-4 border-t border-jcmBorder flex justify-end gap-3">
+                <button onclick="closeConfigModal()" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl font-medium transition">Cancelar</button>
+                <button onclick="saveConfigChanges()" class="px-4 py-2 bg-jcmRed hover:bg-red-700 text-white rounded-xl font-medium transition">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE INTERACTIVIDAD -->
+    <script>
+        // Sistema de Login
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+            
+            if(user.trim() !== '' && pass.trim() !== '') {
+                showToast('¡Bienvenido, Sergio Varas (Mecánico Líder Torque)!', 'success');
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+            } else {
+                showToast('Por favor ingrese usuario y contraseña válidos.', 'error');
+            }
+        }
+
+        function handleLogout() {
+            document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            showToast('Sesión cerrada correctamente.', 'info');
+        }
+
+        function togglePassword() {
+            const passInput = document.getElementById('login-pass');
+            const eyeIcon = document.getElementById('eye-icon');
+            if(passInput.type === 'password') {
+                passInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        function showForgotPassword(e) {
+            e.preventDefault();
+            showToast('Contacte al administrador del sistema en Google Drive para blanquear clave.', 'info');
+        }
+
+        // Navegación entre pestañas
+        function switchTab(tabId) {
+            const tabs = ['inicio', 'plantillas', 'protocolos', 'usuarios'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if(el) el.classList.add('hidden');
+                const nav = document.getElementById(`nav-${t}`);
+                if(nav) {
+                    nav.classList.remove('bg-jcmRed', 'text-white', 'shadow-md', 'shadow-jcmRed/20');
+                    nav.classList.add('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
+                }
+            });
+
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            if(activeTab) activeTab.classList.remove('hidden');
+            
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if(activeNav) {
+                activeNav.classList.remove('text-gray-400', 'hover:text-white', 'hover:bg-white/5');
+                activeNav.classList.add('bg-jcmRed', 'text-white', 'shadow-md', 'shadow-jcmRed/20');
+            }
+
+            const titles = {
+                'inicio': 'Dashboard / Mineras',
+                'plantillas': 'Plantillas de Informes Técnicos',
+                'protocolos': 'Protocolos y Tarjetas por Holding',
+                'usuarios': 'Gestión de Usuarios del Sistema'
+            };
+            document.getElementById('current-view-title').innerText = titles[tabId] || 'Panel General';
+        }
+
+        // Submenús desplegables
+        function toggleSubmenu(id) {
+            const sub = document.getElementById(id);
+            const arrowId = id === 'submenu-protocolos' ? 'arrow-protocolos' : 'arrow-opciones';
+            const arrow = document.getElementById(arrowId);
+            
+            if(sub.classList.contains('hidden')) {
+                sub.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                sub.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Filtrar por Holding desde el submenú
+        function filterByHolding(holdingName) {
+            switchTab('protocolos');
+            const badge = document.getElementById('proto-holding-badge');
+            const title = document.getElementById('proto-title');
+            const container = document.getElementById('protocolos-list-container');
+            
+            badge.innerText = `Holding: ${holdingName}`;
+            title.innerText = `Protocolos Técnicos - ${holdingName}`;
+
+            let faenasHTML = '';
+            if(holdingName === 'BHP') {
+                faenasHTML = `
+                    <div class="glass-panel p-5 rounded-xl space-y-3">
+                        <div class="flex justify-between items-center"><span class="font-bold text-white">Planta Concentradora Laguna Seca</span><span class="text-xs text-emerald-400">Activo</span></div>
+                        <p class="text-xs text-gray-400">Protocolo de apriete pernos molino SAG 36x18ft. Uso de grasa Fuchs Lagermeister BF 2.</p>
+                        <button onclick="downloadTemplate('Laguna_Seca')" class="px-3 py-1.5 bg-jcmRed/10 text-jcmRed rounded-lg text-xs font-semibold hover:bg-jcmRed hover:text-white transition">Ver Protocolo PDF</button>
+                    </div>
+                    <div class="glass-panel p-5 rounded-xl space-y-3">
+                        <div class="flex justify-between items-center"><span class="font-bold text-white">Planta Concentradora Los Colorados</span><span class="text-xs text-emerald-400">Activo</span></div>
+                        <p class="text-xs text-gray-400">Secuencia de torque cruzado en tapas de descarga y lubricación de pernos principales.</p>
+                        <button onclick="downloadTemplate('Los_Colorados')" class="px-3 py-1.5 bg-jcmRed/10 text-jcmRed rounded-lg text-xs font-semibold hover:bg-jcmRed hover:text-white transition">Ver Protocolo PDF</button>
+                    </div>
+                    <div class="glass-panel p-5 rounded-xl space-y-3">
+                        <div class="flex justify-between items-center"><span class="font-bold text-white">Spence</span><span class="text-xs text-emerald-400">Activo</span></div>
+                        <p class="text-xs text-gray-400">Control de torque en chancado primario y secundario con certificación de torqueo.</p>
+                        <button onclick="downloadTemplate('Spence')" class="px-3 py-1.5 bg-jcmRed/10 text-jcmRed rounded-lg text-xs font-semibold hover:bg-jcmRed hover:text-white transition">Ver Protocolo PDF</button>
+                    </div>
+                `;
+            } else if(holdingName === 'Lundin') {
+                faenasHTML = `
+                    <div class="glass-panel p-5 rounded-xl space-y-3">
+                        <div class="flex justify-between items-center"><span class="font-bold text-white">Caserones</span><span class="text-xs text-emerald-400">Activo</span></div>
+                        <p class="text-xs text-gray-400">Protocolo de torque para equipos hidromecánicos y molinos de barras.</p>
+                        <button onclick="downloadTemplate('Caserones')" class="px-3 py-1.5 bg-jcmRed/10 text-jcmRed rounded-lg text-xs font-semibold hover:bg-jcmRed hover:text-white transition">Ver Protocolo PDF</button>
+                    </div>
+                    <div class="glass-panel p-5 rounded-xl space-y-3">
+                        <div class="flex justify-between items-center"><span class="font-bold text-white">Candelaria</span><span class="text-xs text-emerald-400">Activo</span></div>
+                        <p class="text-xs text-gray-400">Tarjetas de control de torque en líneas de flotación y espesadores.</p>
+                        <button onclick="downloadTemplate('Candelaria')" class="px-3 py-1.5 bg-jcmRed/10 text-jcmRed rounded-lg text-xs font-semibold hover:bg-jcmRed hover:text-white transition">Ver Protocolo PDF</button>
+                    </div>
+                    <div class="glass-panel p-5 rounded-xl space-y-3">
+                        <div class="flex justify-between items-center"><span class="font-bold text-white">Ojos del Salado</span><span class="text-xs text-emerald-400">Activo</span></div>
+                        <p class="text-xs text-gray-400">Mantenimiento y torque de equipos subterráneos y ventilación.</p>
+                        <button onclick="downloadTemplate('Ojos_Salado')" class="px-3 py-1.5 bg-jcmRed/10 text-jcmRed rounded-lg text-xs font-semibold hover:bg-jcmRed hover:text-white transition">Ver Protocolo PDF</button>
+                    </div>
+                `;
+            } else if(holdingName === 'Teck') {
+                faenasHTML = `
+                    <div class="glass-panel p-5 rounded-xl space-y-3">
+                        <div class="flex justify-between items-center"><span class="font-bold text-white">Quebrada Blanca (QB2)</span><span class="text-xs text-emerald-400">Activo</span></div>
+                        <p class="text-xs text-gray-400">Protocolo de torque estructural y correas transportadoras principales.</p>
+                        <button onclick="downloadTemplate('Quebrada_Blanca')" class="px-3 py-1.5 bg-jcmRed/10 text-jcmRed rounded-lg text-xs font-semibold hover:bg-jcmRed hover:text-white transition">Ver Protocolo PDF</button>
+                    </div>
+                `;
+            } else if(holdingName === 'Anglo') {
+                faenasHTML = `
+                    <div class="glass-panel p-5 rounded-xl space-y-3">
+                        <div class="flex justify-between items-center"><span class="font-bold text-white">Los Bronces</span><span class="text-xs text-emerald-400">Activo</span></div>
+                        <p class="text-xs text-gray-400">Protocolo de torque en molinos de alta presión y chancadores giratorios.</p>
+                        <button onclick="downloadTemplate('Los_Bronces')" class="px-3 py-1.5 bg-jcmRed/10 text-jcmRed rounded-lg text-xs font-semibold hover:bg-jcmRed hover:text-white transition">Ver Protocolo PDF</button>
+                    </div>
+                    <div class="glass-panel p-5 rounded-xl space-y-3">
+                        <div class="flex justify-between items-center"><span class="font-bold text-white">Confluencia</span><span class="text-xs text-emerald-400">Activo</span></div>
+                        <p class="text-xs text-gray-400">Apriete de pernos de revestimiento y lubricación técnica.</p>
+                        <button onclick="downloadTemplate('Confluencia')" class="px-3 py-1.5 bg-jcmRed/10 text-jcmRed rounded-lg text-xs font-semibold hover:bg-jcmRed hover:text-white transition">Ver Protocolo PDF</button>
+                    </div>
+                `;
+            }
+            container.innerHTML = faenasHTML;
+            showToast(`Cargados protocolos de ${holdingName}`, 'info');
+        }
+
+        function selectFaena(faenaName, holding) {
+            filterByHolding(holding);
+            showToast(`Faena seleccionada: ${faenaName}`, 'success');
+        }
+
+        // Modales de Configuración
+        function openConfigModal(type) {
+            const modal = document.getElementById('config-modal');
+            const title = document.getElementById('config-modal-title');
+            const body = document.getElementById('config-modal-body');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            if(type === 'general') {
+                title.innerText = 'Configuración General del Sistema';
+                body.innerHTML = `
+                    <div><label class="block font-semibold mb-1">Nombre de Empresa</label><input type="text" value="JCM Ingeniería Ltda." class="w-full bg-[#0a0a0a] border border-jcmBorder rounded-lg p-2 text-white"></div>
+                    <div><label class="block font-semibold mb-1">Departamento</label><input type="text" value="Departamento de Torque Controlado" class="w-full bg-[#0a0a0a] border border-jcmBorder rounded-lg p-2 text-white"></div>
+                `;
+            } else if(type === 'theme') {
+                title.innerText = 'Personalización de Colores y Tema';
+                body.innerHTML = `
+                    <div><label class="block font-semibold mb-1">Color Corporativo Primario</label><input type="color" value="#E50914" class="w-full h-10 bg-[#0a0a0a] border border-jcmBorder rounded-lg p-1 cursor-pointer"></div>
+                    <div><label class="block font-semibold mb-1">Modo de Interfaz</label><select class="w-full bg-[#0a0a0a] border border-jcmBorder rounded-lg p-2 text-white"><option>Modo Oscuro Profundo (Default)</option><option>Modo Alto Contraste Terreno</option></select></div>
+                `;
+            } else if(type === 'security') {
+                title.innerText = 'Seguridad y Permisos de Acceso';
+                body.innerHTML = `
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2"><input type="checkbox" checked class="rounded bg-[#0a0a0a] border-jcmBorder text-jcmRed"> Exigir verificación de Google Drive en login</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" checked class="rounded bg-[#0a0a0a] border-jcmBorder text-jcmRed"> Registrar auditoría de IP por cada torque</label>
+                    </div>
+                `;
+            } else if(type === 'sync') {
+                title.innerText = 'Sincronización Cloud con Google Drive';
+                body.innerHTML = `
+                    <p class="text-gray-400">Estado de conexión con Google Drive personal:</p>
+                    <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> Conectado y sincronizando 24/7 sin errores.
+                    </div>
+                `;
+            }
+        }
+
+        function closeConfigModal() {
+            const modal = document.getElementById('config-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function saveConfigChanges() {
+            closeConfigModal();
+            showToast('Configuración guardada exitosamente.', 'success');
+        }
+
+        function openNewProtocolModal() {
+            showToast('Abriendo formulario de registro sincronizado con Google Drive...', 'info');
+        }
+
+        function triggerCloudBackup() {
+            showToast('Sincronización con Google Drive completada. Auditoría actualizada.', 'success');
+        }
+
+        function downloadTemplate(name) {
+            showToast(`Descargando plantilla ${name} desde el repositorio...`, 'success');
+        }
+
+        function filterDashboard(query) {
+            // Búsqueda en tiempo real simulada
+        }
+
+        // Sistema de Notificaciones Toasts
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColors = {
+                'success': 'bg-emerald-600 text-white',
+                'error': 'bg-red-600 text-white',
+                'info': 'bg-[#141414] text-white border border-jcmBorder'
+            };
+
+            const icons = {
+                'success': 'fa-circle-check text-white',
+                'error': 'fa-triangle-exclamation text-white',
+                'info': 'fa-circle-info text-jcmRed'
+            };
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-xs font-medium transition-all duration-300 transform translate-y-2 opacity-0 ${bgColors[type]}`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type]} text-sm"></i><span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
